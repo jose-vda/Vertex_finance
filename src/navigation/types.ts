@@ -15,6 +15,11 @@ export type MainStackParamList = {
   AddInvestment: undefined;
   AssetDetail: { investment?: EnrichedInvestment; assetPreview?: AssetPreviewParam };
   Planning: undefined;
+  BookList: { category: 'finance' | 'investments' | 'entrepreneurship' };
+  BookDetail: { bookId: string };
+  TopicForum: { category: 'finance' | 'investments' | 'entrepreneurship' };
+  TopicThread: { topicId: string };
+  PriceAlerts: undefined;
 };
 
 export type RootNavigationParams = NavigatorScreenParams<MainStackParamList>;

@@ -26,7 +26,10 @@ App de controle financeiro pessoal em React Native (Expo **SDK 54**) — mesma f
 2. **Bucket de fotos de perfil (opcional)**  
    Para permitir que os utilizadores adicionem foto de perfil, crie no Supabase (Storage) um bucket chamado **`avatars`** e torne-o **público** (Public bucket). Caso contrário, a opção "Alterar foto" no perfil mostrará um erro.
 
-3. **Variáveis de ambiente**  
+3. **Vertex Academy — áudio dos resumos (opcional)**  
+   Para o player “Ouvir resumo” nos livros, crie o bucket e faça upload dos MP3 conforme [docs/academy-audio.md](docs/academy-audio.md) e defina `EXPO_PUBLIC_ACADEMY_AUDIO_BASE_URL` no `.env`. Sem esta variável, o botão de áudio não aparece.
+
+4. **Variáveis de ambiente**  
    Crie um arquivo `.env` na raiz do projeto (copie de `.env.example`):
    ```bash
    cp .env.example .env
@@ -34,10 +37,11 @@ App de controle financeiro pessoal em React Native (Expo **SDK 54**) — mesma f
    Preencha no `.env`:
    - `EXPO_PUBLIC_SUPABASE_URL` = URL do projeto (ex: `https://xxxxx.supabase.co`)
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY` = chave anon do Supabase  
+   - (Opcional) `EXPO_PUBLIC_ACADEMY_AUDIO_BASE_URL` = URL da pasta `summaries` dos MP3 da Academy — ver [docs/academy-audio.md](docs/academy-audio.md)
 
    Ou edite `src/lib/supabase.ts` e substitua `YOUR_SUPABASE_URL` e `YOUR_SUPABASE_ANON_KEY` diretamente.
 
-4. **Instalar e rodar**
+5. **Instalar e rodar**
    ```bash
    npm install
    npx expo start
@@ -45,7 +49,7 @@ App de controle financeiro pessoal em React Native (Expo **SDK 54**) — mesma f
    - **No telemóvel:** instala a app **Expo Go** (App Store / Play Store), escaneia o QR code que aparece no terminal.
    - **No computador:** pressiona `i` (iOS) ou `a` (Android) para abrir no simulador/emulador.
 
-5. **Se der erro ao iniciar (Metro / TerminalReporter):**
+6. **Se der erro ao iniciar (Metro / TerminalReporter):**
    - Usa **Node 18** ou **Node 20** (ex.: `nvm use 18` se tiveres nvm).
    - Limpa a cache: `npx expo start -c`
 

@@ -11,6 +11,16 @@ import { useWallet, type AssetType } from '../context/WalletContext';
 
 type RangeKey = 'month' | '3m' | '6m' | 'year';
 
+type AnalyticsSectionKey = 'recentTx' | 'cashflow' | 'expenses' | 'allocation' | 'history';
+
+const ANALYTICS_SECTIONS_VISIBLE_DEFAULT: Record<AnalyticsSectionKey, boolean> = {
+  recentTx: true,
+  cashflow: true,
+  expenses: true,
+  allocation: true,
+  history: true,
+};
+
 function getTxTime(tx: Transaction): number {
   const raw = tx.created_at || tx.date;
   if (!raw) return 0;
@@ -43,6 +53,13 @@ export default function AnalyticsScreen() {
   const { portfolio } = useWallet();
   const [selectedRange, setSelectedRange] = useState<RangeKey>('month');
   const [txModalVisible, setTxModalVisible] = useState(false);
+  const [sectionVisible, setSectionVisible] = useState<Record<AnalyticsSectionKey, boolean>>(() => ({
+    ...ANALYTICS_SECTIONS_VISIBLE_DEFAULT,
+  }));
+
+  const toggleSection = useCallback((key: AnalyticsSectionKey) => {
+    setSectionVisible((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler({
@@ -165,6 +182,54 @@ export default function AnalyticsScreen() {
     [t, deleteTransaction]
   );
 
+  const sectionLabelKey: Record<AnalyticsSectionKey, string> = {
+    recentTx: 'recentTransactions',
+    cashflow: 'cashflowOverview',
+    expenses: 'expensesByCategory',
+    allocation: 'allocationBreakdown',
+    history: 'netWorthHistory',
+  };
+
+  function renderCollapsedStrip(key: AnalyticsSectionKey) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.78}
+        onPress={() => toggleSection(key)}
+        style={[
+          styles.collapsedStrip,
+          {
+            backgroundColor: colors.cardBg,
+            borderColor: isDark ? 'rgba(255,255,255,0.1)' : colors.s200,
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={`${t('analyticsTapToShow')}: ${t(sectionLabelKey[key])}`}
+      >
+        <View style={[styles.collapsedStripIcon, { backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : `${colors.e500}12` }]}>
+          <Ionicons name="eye-off-outline" size={20} color={colors.e600} />
+        </View>
+        <Text style={[styles.collapsedStripText, { color: colors.s700 }]} numberOfLines={2}>
+          {t('analyticsTapToShow')} · {t(sectionLabelKey[key])}
+        </Text>
+        <Ionicons name="chevron-down" size={18} color={colors.s400} />
+      </TouchableOpacity>
+    );
+  }
+
+  function renderSectionEye(key: AnalyticsSectionKey) {
+    return (
+      <TouchableOpacity
+        onPress={() => toggleSection(key)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={[styles.sectionVisibilityBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.s50 }]}
+        accessibilityRole="button"
+        accessibilityLabel={`${t('analyticsTapToHide')}: ${t(sectionLabelKey[key])}`}
+      >
+        <Ionicons name="eye-outline" size={22} color={colors.e600} />
+      </TouchableOpacity>
+    );
+  }
+
   return (
     <>
     <Animated.ScrollView
@@ -190,28 +255,37 @@ export default function AnalyticsScreen() {
         </View>
       </View>
 
-      <Animated.View entering={FadeInDown.delay(20).duration(360)}>
-        <TouchableOpacity
-          activeOpacity={0.78}
-          onPress={() => setTxModalVisible(true)}
-          style={[styles.recentTxBtn, { backgroundColor: colors.cardBg, borderColor: colors.s200 }]}
-        >
-          <View style={[styles.recentTxIcon, { backgroundColor: colors.e50 }]}>
-            <Ionicons name="receipt-outline" size={18} color={colors.e600} />
-          </View>
-          <Text style={[styles.recentTxLabel, { color: colors.s900 }]}>{t('recentTransactions')}</Text>
-          <View style={{ flex: 1 }} />
-          {transactions.length > 0 ? (
-            <View style={[styles.recentTxBadge, { backgroundColor: colors.e500 }]}>
-              <Text style={styles.recentTxBadgeText}>{transactions.length}</Text>
+      {sectionVisible.recentTx ? (
+        <Animated.View entering={FadeInDown.delay(20).duration(360)} style={styles.recentTxRow}>
+          <TouchableOpacity
+            activeOpacity={0.78}
+            onPress={() => setTxModalVisible(true)}
+            style={[styles.recentTxBtn, { backgroundColor: colors.cardBg, borderColor: colors.s200, marginBottom: 0, flex: 1 }]}
+          >
+            <View style={[styles.recentTxIcon, { backgroundColor: colors.e50 }]}>
+              <Ionicons name="receipt-outline" size={18} color={colors.e600} />
             </View>
-          ) : null}
-          <Ionicons name="chevron-forward" size={16} color={colors.s400} />
-        </TouchableOpacity>
-      </Animated.View>
+            <Text style={[styles.recentTxLabel, { color: colors.s900 }]}>{t('recentTransactions')}</Text>
+            <View style={{ flex: 1 }} />
+            {transactions.length > 0 ? (
+              <View style={[styles.recentTxBadge, { backgroundColor: colors.e500 }]}>
+                <Text style={styles.recentTxBadgeText}>{transactions.length}</Text>
+              </View>
+            ) : null}
+            <Ionicons name="chevron-forward" size={16} color={colors.s400} />
+          </TouchableOpacity>
+          {renderSectionEye('recentTx')}
+        </Animated.View>
+      ) : (
+        renderCollapsedStrip('recentTx')
+      )}
 
+      {sectionVisible.cashflow ? (
       <Animated.View entering={FadeInDown.delay(40).duration(380)} style={[styles.card, { backgroundColor: colors.cardBg }]}>
-        <Text style={[styles.sectionTitle, { color: colors.s400 }]}>{t('cashflowOverview')}</Text>
+        <View style={styles.cardSectionHeader}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInHeader, { color: colors.s400 }]}>{t('cashflowOverview')}</Text>
+          {renderSectionEye('cashflow')}
+        </View>
         <View style={[styles.rangeRow, { backgroundColor: colors.s100 }]}>
           {rangeOptions.map((opt) => {
             const active = selectedRange === opt.key;
@@ -247,9 +321,16 @@ export default function AnalyticsScreen() {
           </Text>
         </View>
       </Animated.View>
+      ) : (
+        renderCollapsedStrip('cashflow')
+      )}
 
+      {sectionVisible.expenses ? (
       <Animated.View entering={FadeInDown.delay(80).duration(380)} style={[styles.card, { backgroundColor: colors.cardBg }]}>
-        <Text style={[styles.sectionTitle, { color: colors.s400 }]}>{t('expensesByCategory')}</Text>
+        <View style={styles.cardSectionHeader}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInHeader, { color: colors.s400 }]}>{t('expensesByCategory')}</Text>
+          {renderSectionEye('expenses')}
+        </View>
         {cashflow.byCategory.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.s400 }]}>{t('noTransactionsYet')}</Text>
         ) : (
@@ -272,9 +353,16 @@ export default function AnalyticsScreen() {
           ))
         )}
       </Animated.View>
+      ) : (
+        renderCollapsedStrip('expenses')
+      )}
 
+      {sectionVisible.allocation ? (
       <Animated.View entering={FadeInDown.delay(120).duration(380)} style={[styles.card, { backgroundColor: colors.cardBg }]}>
-        <Text style={[styles.sectionTitle, { color: colors.s400 }]}>{t('allocationBreakdown')}</Text>
+        <View style={styles.cardSectionHeader}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInHeader, { color: colors.s400 }]}>{t('allocationBreakdown')}</Text>
+          {renderSectionEye('allocation')}
+        </View>
         {!allocation.hasData ? (
           <Text style={[styles.emptyText, { color: colors.s400 }]}>{t('noInvestmentsYet')}</Text>
         ) : (
@@ -309,9 +397,16 @@ export default function AnalyticsScreen() {
           </>
         )}
       </Animated.View>
+      ) : (
+        renderCollapsedStrip('allocation')
+      )}
 
+      {sectionVisible.history ? (
       <Animated.View entering={FadeInDown.delay(160).duration(380)} style={[styles.card, { backgroundColor: colors.cardBg }]}>
-        <Text style={[styles.sectionTitle, { color: colors.s400 }]}>{t('netWorthHistory')}</Text>
+        <View style={styles.cardSectionHeader}>
+          <Text style={[styles.sectionTitle, styles.sectionTitleInHeader, { color: colors.s400 }]}>{t('netWorthHistory')}</Text>
+          {renderSectionEye('history')}
+        </View>
         <View style={styles.historyWrap}>
           {historyData.values.map((val, i) => {
             const width = historyData.maxVal > 0 ? (val / historyData.maxVal) * 100 : 0;
@@ -333,6 +428,9 @@ export default function AnalyticsScreen() {
           })}
         </View>
       </Animated.View>
+      ) : (
+        renderCollapsedStrip('history')
+      )}
     </Animated.ScrollView>
 
     <Modal visible={txModalVisible} animationType="slide" transparent>
@@ -392,6 +490,12 @@ const styles = StyleSheet.create({
   headerIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { fontSize: 13, marginTop: 2 },
+  recentTxRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 10,
+    marginBottom: 14,
+  },
   recentTxBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -400,6 +504,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     marginBottom: 14,
+  },
+  sectionVisibilityBtn: {
+    width: 48,
+    alignSelf: 'stretch',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  sectionTitleInHeader: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  collapsedStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  collapsedStripIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  collapsedStripText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
   },
   recentTxIcon: { width: 36, height: 36, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   recentTxLabel: { fontSize: 14, fontWeight: '700' },

@@ -1,3 +1,4 @@
+import './src/lib/notificationsSetup';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -7,6 +8,8 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { SettingsProvider } from './src/context/SettingsContext';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { WalletProvider } from './src/context/WalletContext';
+import { AcademyProvider } from './src/context/AcademyContext';
+import { AcademyPremiumProvider } from './src/context/AcademyPremiumContext';
 import AuthStack from './src/navigation/AuthStack';
 import MainStack from './src/navigation/MainStack';
 import OnboardingScreen from './src/screens/OnboardingScreen';
@@ -85,9 +88,13 @@ export default function App() {
         <SettingsProvider>
           <ThemeProvider>
             <AuthProvider>
-              <WalletProvider>
-                <Root />
-              </WalletProvider>
+              <AcademyPremiumProvider>
+                <WalletProvider>
+                  <AcademyProvider>
+                    <Root />
+                  </AcademyProvider>
+                </WalletProvider>
+              </AcademyPremiumProvider>
             </AuthProvider>
           </ThemeProvider>
         </SettingsProvider>

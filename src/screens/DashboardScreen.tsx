@@ -14,7 +14,13 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedScrollHandler,
+  useSharedValue,
+  useAnimatedStyle,
+  FadeInDown,
+  withSpring,
+} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { INCOME_CATS, EXPENSE_CATS } from '../constants/theme';
 import { useTheme } from '../context/ThemeContext';
@@ -44,6 +50,10 @@ export default function DashboardScreen() {
   const [toastMessage, setToastMessage] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const scrollY = useSharedValue(0);
+  const investCtaScale = useSharedValue(1);
+  const investCtaAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: investCtaScale.value }],
+  }));
 
   // Combined patrimony
   const investmentValue = portfolio?.totalValue ?? 0;
@@ -187,13 +197,50 @@ export default function DashboardScreen() {
           </View>
         </PressableScale>
       </Animated.View>
-      <Animated.View entering={FadeInDown.delay(150).duration(400)}>
-      <PressableScale onPress={() => (navigation as any).navigate('Analytics')}>
-        <View style={[styles.btnAnalytics, { borderColor: colors.s200, backgroundColor: colors.s50 }]}>
-          <Ionicons name="bar-chart-outline" size={18} color={colors.e600} />
-          <Text style={[styles.btnOutlineText, { color: colors.e600 }]}>{t('analytics')}</Text>
-        </View>
-      </PressableScale>
+      <Animated.View entering={FadeInDown.delay(150).duration(400)} style={styles.dashboardSecondaryActions}>
+        <PressableScale onPress={() => (navigation as any).navigate('Analytics')}>
+          <View style={[styles.btnAnalytics, { borderColor: colors.s200, backgroundColor: colors.s50 }]}>
+            <Ionicons name="bar-chart-outline" size={18} color={colors.e600} />
+            <Text style={[styles.btnOutlineText, { color: colors.e600 }]}>{t('analytics')}</Text>
+          </View>
+        </PressableScale>
+        <Animated.View entering={FadeInDown.delay(200).duration(450)}>
+          <Animated.View style={[styles.investCtaShadowWrap, investCtaAnimatedStyle]}>
+          <Pressable
+            onPressIn={() => {
+              investCtaScale.value = withSpring(0.94, { damping: 14, stiffness: 520 });
+            }}
+            onPressOut={() => {
+              investCtaScale.value = withSpring(1, { damping: 11, stiffness: 280 });
+            }}
+            onPress={() => (navigation as any).navigate('Wallet')}
+            style={({ pressed }) => [styles.investCtaPressable, pressed && styles.investCtaPressableActive]}
+          >
+            <LinearGradient
+              colors={['#064E3B', '#059669', '#14B8A6']}
+              locations={[0, 0.5, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.investCtaGradient}
+            >
+              <View style={styles.investCtaIconRing}>
+                <View style={styles.investCtaIconInner}>
+                  <Ionicons name="wallet" size={24} color="#fff" />
+                </View>
+              </View>
+              <View style={styles.investCtaTextCol}>
+                <Text style={styles.investCtaTitle}>{t('investmentsTab')}</Text>
+                <Text style={styles.investCtaSubtitle} numberOfLines={2}>
+                  {t('walletSubtitle')}
+                </Text>
+              </View>
+              <View style={styles.investCtaChevronWrap}>
+                <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.92)" />
+              </View>
+            </LinearGradient>
+          </Pressable>
+          </Animated.View>
+        </Animated.View>
       </Animated.View>
       <Modal visible={modalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }} keyboardVerticalOffset={0}>
@@ -381,7 +428,71 @@ const styles = StyleSheet.create({
   twoCol: { flexDirection: 'row', gap: 12, marginBottom: 14 },
   btnOutline: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 2, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
   btnOutlineText: { fontSize: 13, fontWeight: '700' },
-  btnAnalytics: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1.5, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20, marginBottom: 14 },
+  dashboardSecondaryActions: { gap: 12, marginBottom: 14 },
+  btnAnalytics: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1.5, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
+  investCtaShadowWrap: {
+    borderRadius: 22,
+    shadowColor: '#047857',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.38,
+    shadowRadius: 20,
+    elevation: 14,
+  },
+  investCtaPressable: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  investCtaPressableActive: {
+    opacity: 0.96,
+  },
+  investCtaGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    gap: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 22,
+  },
+  investCtaIconRing: {
+    padding: 2,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  investCtaIconInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  investCtaTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  investCtaTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: -0.4,
+  },
+  investCtaSubtitle: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.78)',
+    marginTop: 4,
+    lineHeight: 17,
+  },
+  investCtaChevronWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   txButton: {
     flexDirection: 'row',
     alignItems: 'center',

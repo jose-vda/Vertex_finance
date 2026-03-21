@@ -1,7 +1,12 @@
-import React, { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
 import { fetchAllPrices, fetchUsdBrlRate } from '../lib/priceService';
+import {
+  mergeAssetKeysForFetch,
+  fetchActivePriceAlertAssetKeys,
+  evaluateActivePriceAlerts,
+} from '../lib/priceAlerts';
 
 export type AssetType = 'stock' | 'crypto' | 'commodity' | 'index';
 export type PurchaseCurrency = 'USD' | 'BRL' | 'EUR';
@@ -123,6 +128,8 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [usdBrlRate, setUsdBrlRate] = useState(5.0);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const usdBrlRateRef = useRef(usdBrlRate);
+  usdBrlRateRef.current = usdBrlRate;
 
   const userId = user?.id;
 
@@ -153,6 +160,38 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     return invs;
   }, [userId]);
 
+  const refreshPricesForInvestments = useCallback(
+    async (invs: Investment[]) => {
+      if (!userId) return;
+      let alertAssets: { ticker: string; type: AssetType }[] = [];
+      try {
+        alertAssets = await fetchActivePriceAlertAssetKeys(supabase, userId);
+      } catch (e) {
+        console.warn('[WalletContext] price alert asset keys:', e);
+      }
+      const fromInvs = invs.map((i) => ({
+        ticker: String(i.asset_ticker).trim(),
+        type: String(i.asset_type).toLowerCase() as AssetType,
+      }));
+      const uniqueFromInvs = fromInvs.filter(
+        (a, idx, arr) => arr.findIndex((b) => b.ticker.toUpperCase() === a.ticker.toUpperCase()) === idx
+      );
+      const merged = mergeAssetKeysForFetch(uniqueFromInvs, alertAssets);
+      if (merged.length === 0) {
+        setPrices({});
+        return;
+      }
+      const [fetchedPrices, rate] = await Promise.all([
+        fetchAllPrices(merged),
+        fetchUsdBrlRate().catch(() => usdBrlRateRef.current),
+      ]);
+      setPrices(fetchedPrices);
+      setUsdBrlRate(rate);
+      void evaluateActivePriceAlerts(supabase, userId, fetchedPrices);
+    },
+    [userId]
+  );
+
   const loadInvestments = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
@@ -179,51 +218,16 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
         updated_at: row.updated_at,
       }));
       setInvestments(invs);
-
-      if (invs.length > 0) {
-        const assets = invs.map((i) => ({
-          ticker: String(i.asset_ticker).trim(),
-          type: String(i.asset_type).toLowerCase() as AssetType,
-        }));
-        const uniqueAssets = assets.filter(
-          (a, idx, arr) => arr.findIndex((b) => b.ticker.toUpperCase() === a.ticker.toUpperCase()) === idx
-        );
-        const [fetchedPrices, rate] = await Promise.all([
-          fetchAllPrices(uniqueAssets),
-          fetchUsdBrlRate().catch(() => usdBrlRate),
-        ]);
-        setPrices(fetchedPrices);
-        setUsdBrlRate(rate);
-      }
+      await refreshPricesForInvestments(invs);
     } catch (e) {
       console.error('[WalletContext] load error:', e);
     } finally {
       setLoading(false);
     }
-  }, [userId]);
-
-  const refreshPricesForInvestments = useCallback(async (invs: Investment[]) => {
-    if (invs.length === 0) {
-      setPrices({});
-      return;
-    }
-    const assets = invs.map((i) => ({
-      ticker: String(i.asset_ticker).trim(),
-      type: String(i.asset_type).toLowerCase() as AssetType,
-    }));
-    const uniqueAssets = assets.filter(
-      (a, idx, arr) => arr.findIndex((b) => b.ticker.toUpperCase() === a.ticker.toUpperCase()) === idx
-    );
-    const [fetchedPrices, rate] = await Promise.all([
-      fetchAllPrices(uniqueAssets),
-      fetchUsdBrlRate().catch(() => usdBrlRate),
-    ]);
-    setPrices(fetchedPrices);
-    setUsdBrlRate(rate);
-  }, [usdBrlRate]);
+  }, [userId, refreshPricesForInvestments]);
 
   const refreshPrices = useCallback(async () => {
-    if (investments.length === 0) return;
+    if (!userId) return;
     setRefreshing(true);
     try {
       await refreshPricesForInvestments(investments);
@@ -232,7 +236,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setRefreshing(false);
     }
-  }, [investments, refreshPricesForInvestments]);
+  }, [userId, investments, refreshPricesForInvestments]);
 
   useEffect(() => {
     let cancelled = false;

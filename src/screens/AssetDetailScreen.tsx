@@ -341,12 +341,12 @@ export default function AssetDetailScreen() {
   const spacing = (screenWidth - 120) / safeDataLength;
 
   return (
-    <ScrollView
-      style={[styles.scroll, { backgroundColor: colors.background }]}
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
+    <View style={[styles.screenRoot, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.7}
@@ -355,10 +355,12 @@ export default function AssetDetailScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.s900} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.s900 }]}>
+        <Text style={[styles.headerTitle, { color: colors.s900 }]} numberOfLines={1}>
           {isPreviewMode ? t('previewMode') : t('assetDetails')}
         </Text>
-        {isPreviewMode ? <View style={{ width: 22 }} /> : (
+        {isPreviewMode ? (
+          <View style={{ width: 24 }} />
+        ) : (
           <TouchableOpacity activeOpacity={0.7} onPress={openSellModal}>
             <Ionicons name="cash-outline" size={22} color={colors.red} />
           </TouchableOpacity>
@@ -639,6 +641,8 @@ export default function AssetDetailScreen() {
         </Animated.View>
       )}
 
+      </ScrollView>
+
       {!isPreviewMode && inv && (
         <SellConfirmModal
           visible={showSellModal}
@@ -659,11 +663,12 @@ export default function AssetDetailScreen() {
           colors={colors}
         />
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: { flex: 1 },
   scroll: { flex: 1 },
   container: { padding: 20, paddingBottom: 120 },
   header: {
@@ -672,7 +677,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 20,
   },
-  headerTitle: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+    marginHorizontal: 12,
+    textAlign: 'center',
+  },
 
   // Hero
   heroCard: {

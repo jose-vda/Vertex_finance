@@ -301,6 +301,13 @@ export default function WalletScreen() {
 
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.s900} />
+          </TouchableOpacity>
           <View style={[styles.headerIcon, { backgroundColor: colors.e50 }]}>
             <Ionicons name="wallet" size={24} color={colors.e500} />
           </View>
@@ -416,6 +423,28 @@ export default function WalletScreen() {
                   <Text style={[styles.addBtnText, { color: colors.e600 }]}>
                     {t('addInvestment')}
                   </Text>
+                </View>
+              </PressableScale>
+            </Animated.View>
+
+            {/* Price alerts — manage all targets */}
+            <Animated.View entering={FadeInDown.delay(240).duration(400)}>
+              <PressableScale onPress={() => navigation.navigate('PriceAlerts')}>
+                <View
+                  style={[
+                    styles.priceAlertsRow,
+                    {
+                      borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.08)',
+                      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(15,23,42,0.03)',
+                    },
+                  ]}
+                >
+                  <View style={[styles.priceAlertsIcon, { backgroundColor: `${colors.e500}14` }]}>
+                    <Ionicons name="notifications-outline" size={18} color={colors.e600} />
+                  </View>
+                  <Text style={[styles.priceAlertsLabel, { color: colors.s900 }]}>{t('priceAlertsManage')}</Text>
+                  <View style={{ flex: 1 }} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.s300} />
                 </View>
               </PressableScale>
             </Animated.View>
@@ -714,6 +743,24 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   addBtnText: { fontSize: 13, fontWeight: '700' },
+  priceAlertsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 14,
+  },
+  priceAlertsIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priceAlertsLabel: { fontSize: 15, fontWeight: '700' },
   planningBtn: {
     flexDirection: 'row',
     alignItems: 'center',
